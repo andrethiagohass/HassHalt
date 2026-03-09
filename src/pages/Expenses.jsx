@@ -292,6 +292,7 @@ export default function Expenses() {
                   <tbody>
                     {filtered.map(expense => {
                       const badge = PAYMENT_BADGE[expense.payment_type] || PAYMENT_BADGE.pix
+                      const canEdit = expense.shared || expense.user_id === user.id
                       return (
                         <tr key={expense.id}>
                           <td className="td-desc" style={{ maxWidth: '220px' }}>
@@ -327,8 +328,14 @@ export default function Expenses() {
                             {formatCurrency(expense.amount)}
                           </td>
                           <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(expense)} title="Editar">✏️</button>
-                            <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }} onClick={() => handleDelete(expense.id)} title="Excluir">🗑️</button>
+                            {canEdit ? (
+                              <>
+                                <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(expense)} title="Editar">✏️</button>
+                                <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }} onClick={() => handleDelete(expense.id)} title="Excluir">🗑️</button>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} title="Despesa pessoal de outro membro">🔒</span>
+                            )}
                           </td>
                         </tr>
                       )
