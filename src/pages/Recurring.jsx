@@ -12,6 +12,8 @@ const PAYMENT_OPTIONS = [
   { value: 'cash',   label: '💵 Dinheiro' },
 ]
 
+const PAYMENT_LABELS = { pix: 'Pix', debit: 'Débito', credit: 'Crédito', cash: 'Dinheiro' }
+
 const EMPTY_FORM = {
   description: '',
   amount: '',
@@ -190,7 +192,7 @@ export default function Recurring() {
                             <td className="td-desc"><strong>{r.description}</strong></td>
                             <td data-label="Dia"><span className="badge badge-primary">Dia {r.day_of_month}</span></td>
                             <td data-label="Categoria">{r.hh_categories?.icon || '💰'} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.hh_categories?.name || '—'}</span></td>
-                            <td data-label="Forma"><span className="badge badge-neutral">{PAYMENT_OPTIONS.find(p => p.value === r.payment_type)?.label?.replace(/[^\w\s]/g, '').trim() || r.payment_type}</span></td>
+                            <td data-label="Forma"><span className="badge badge-neutral">{PAYMENT_LABELS[r.payment_type] || r.payment_type}</span></td>
                             <td data-label="Tipo">{r.shared ? <span className="badge badge-primary">Compartilhado</span> : <span className="badge badge-neutral">Pessoal</span>}</td>
                             <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)' }}>{formatCurrency(r.amount)}</td>
                             <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
