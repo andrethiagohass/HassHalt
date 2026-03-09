@@ -21,6 +21,7 @@ const EMPTY_FORM = {
   category_id: '',
   payment_type: 'credit',
   shared: true,
+  user_id: '',
 }
 
 export default function Recurring() {
@@ -59,9 +60,9 @@ export default function Recurring() {
     try { setFamilyMembers(await getFamilyMembers(familyId)) } catch {}
   }
 
-  function openAdd() { setForm(EMPTY_FORM); setEditingId(null); setShowModal(true) }
+  function openAdd() { setForm({ ...EMPTY_FORM, user_id: user.id }); setEditingId(null); setShowModal(true) }
   function openEdit(r) {
-    setForm({ description: r.description, amount: String(r.amount), day_of_month: String(r.day_of_month), category_id: r.category_id || '', payment_type: r.payment_type || 'debit', shared: r.shared })
+    setForm({ description: r.description, amount: String(r.amount), day_of_month: String(r.day_of_month), category_id: r.category_id || '', payment_type: r.payment_type || 'credit', shared: r.shared, user_id: r.user_id || user.id })
     setEditingId(r.id)
     setShowModal(true)
   }
@@ -73,11 +74,11 @@ export default function Recurring() {
     try {
       const payload = { family_id: familyId, description: form.description.trim(), amount: parseFloat(form.amount), day_of_month: parseInt(form.day_of_month), category_id: form.category_id || null, payment_type: form.payment_type, shared: form.shared }
       if (editingId) {
-        const updated = await updateRecurring(editingId, { ...payload })
+        const updated = await updateRecurring(editingId, { ...payload, user_id: form.shared ? null : (form.user_id || user.id) })
         setRecurring(prev => prev.map(r => r.id === editingId ? updated : r))
         setToast({ type: 'success', text: 'Recorrente atualizada!' })
       } else {
-        const created = await addRecurring({ ...payload, active: true, user_id: user.id })
+        const created = await addRecurring({ ...payload, active: true, user_id: form.shared ? null : (form.user_id || user.id) })
         setRecurring(prev => [...prev, created].sort((a, b) => a.day_of_month - b.day_of_month))
         setToast({ type: 'success', text: 'Despesa recorrente criada!' })
       }
@@ -295,6 +296,16 @@ export default function Recurring() {
                     Despesa compartilhada (do casal)
                   </label>
                 </div>
+                {!form.shared && (
+                  <div className="form-group">
+                    <label className="form-label">De quem é</label>
+                    <select className="form-control" value={form.user_id} onChange={e => setForm(f => ({ ...f, user_id: e.target.value }))}>
+                      {familyMembers.map(m => (
+                        <option key={m.user_id} value={m.user_id}>{m.display_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancelar</button>
