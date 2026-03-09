@@ -276,12 +276,12 @@ export default function Expenses() {
           ) : (
             <div>
               <div className="table-wrapper">
-                <table>
+                <table className="mobile-cards">
                   <thead>
                     <tr>
+                      <th>Descrição</th>
                       <th>Data</th>
                       <th>Categoria</th>
-                      <th>Descrição</th>
                       <th>Forma</th>
                       <th>Tipo</th>
                       <th style={{ textAlign: 'right' }}>Valor</th>
@@ -293,10 +293,14 @@ export default function Expenses() {
                       const badge = PAYMENT_BADGE[expense.payment_type] || PAYMENT_BADGE.pix
                       return (
                         <tr key={expense.id}>
-                          <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                          <td className="td-desc">
+                            <strong>{expense.description}</strong>
+                            {expense.notes && <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '0.4rem', fontSize: '0.8rem' }}>— {expense.notes}</span>}
+                          </td>
+                          <td data-label="Data" style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                             {formatDate(expense.date)}
                           </td>
-                          <td>
+                          <td data-label="Categoria">
                             <span title={expense.hh_categories?.name}>
                               {expense.hh_categories?.icon || '💰'}{' '}
                               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -304,48 +308,24 @@ export default function Expenses() {
                               </span>
                             </span>
                           </td>
-                          <td style={{ maxWidth: '200px' }}>
-                            <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {expense.description}
-                            </div>
-                            {expense.notes && (
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {expense.notes}
-                              </div>
-                            )}
-                          </td>
-                          <td>
+                          <td data-label="Forma">
                             <span className={`badge ${badge.cls}`}>{badge.label}</span>
                           </td>
-                          <td>
+                          <td data-label="Tipo">
                             {expense.shared ? (
-                              <span className="badge badge-primary" title={expense.paid_by ? (familyMembers.find(m => m.user_id === expense.paid_by)?.display_name || 'Membro') : ''}>
+                              <span className="badge badge-primary">
                                 💑 {expense.paid_by ? (familyMembers.find(m => m.user_id === expense.paid_by)?.display_name || 'Membro') : 'Casal'}
                               </span>
                             ) : (
                               <span className="badge badge-neutral">Pessoal</span>
                             )}
                           </td>
-                          <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>
+                          <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>
                             {formatCurrency(expense.amount)}
                           </td>
-                          <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <button
-                              className="btn-icon"
-                              style={{ marginRight: '0.25rem' }}
-                              onClick={() => openEdit(expense)}
-                              title="Editar"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              className="btn-icon"
-                              style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }}
-                              onClick={() => handleDelete(expense.id)}
-                              title="Excluir"
-                            >
-                              🗑️
-                            </button>
+                          <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(expense)} title="Editar">✏️</button>
+                            <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }} onClick={() => handleDelete(expense.id)} title="Excluir">🗑️</button>
                           </td>
                         </tr>
                       )

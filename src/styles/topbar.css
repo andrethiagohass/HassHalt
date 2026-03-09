@@ -223,7 +223,19 @@
 
 /* Mobile */
 @media (max-width: 768px) {
+  .topbar { padding: 0 1rem; }
+  .topbar-brand-name { font-size: 1rem; }
   .topbar-brand-name span { display: none; }
+  .topbar-logo { width: 28px; height: 28px; }
   .topbar-quickadd span { display: none; }
-  .topbar-quickadd { padding: 0.4rem 0.5rem; }
+  .topbar-quickadd {
+    padding: 0.5rem 0.625rem;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .topbar-quickadd svg { width: 18px; height: 18px; }
+  .topbar-user-btn { padding: 0.3rem; border-radius: 50%; }
+  .topbar-user-email { display: none !important; }
+  .topbar-menu-btn { min-width: 44px; min-height: 44px; }
 }

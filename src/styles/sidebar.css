@@ -34,13 +34,20 @@
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    top: 0;
+    height: 100vh;
+    z-index: 1100;
   }
-  .sidebar-open {
+  .sidebar.sidebar-open {
     transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
   }
   .sidebar.collapsed {
     width: var(--sidebar-width);
+  }
+  .nav-link {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
   }
 }
 
