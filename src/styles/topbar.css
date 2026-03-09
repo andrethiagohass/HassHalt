@@ -1,0 +1,200 @@
+/* ============================================
+   HASSHALT — TOPBAR
+   ============================================ */
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-height);
+  background: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Left section */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.topbar-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.topbar-menu-btn:hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+}
+
+.topbar-menu-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+}
+
+.topbar-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.topbar-brand-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.02em;
+}
+
+.topbar-brand-name span {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Right section */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* User dropdown */
+.topbar-user {
+  position: relative;
+}
+
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 100px;
+  padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-primary);
+}
+
+.topbar-user-btn:hover {
+  background: var(--border-light);
+  border-color: #cbd5e1;
+}
+
+.topbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.topbar-user-email {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 200px;
+  z-index: 1010;
+  overflow: hidden;
+  animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar-dropdown-header {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.topbar-dropdown-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.topbar-dropdown-email {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  margin-top: 0.125rem;
+  word-break: break-all;
+}
+
+.topbar-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.topbar-dropdown-item:hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+}
+
+.topbar-dropdown-item.danger {
+  color: var(--error-color);
+}
+
+.topbar-dropdown-item.danger:hover {
+  background: var(--error-light);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .topbar-user-email { display: none; }
+  .topbar-brand-name span { display: none; }
+}
