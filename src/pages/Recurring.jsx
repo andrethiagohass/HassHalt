@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
-import { getRecurring, addRecurring, updateRecurring, deleteRecurring, getCategories, generateMonthExpenses } from '../lib/supabase'
+import { getRecurring, addRecurring, updateRecurring, deleteRecurring, getCategories, getFamilyMembers, generateMonthExpenses } from '../lib/supabase'
 import { formatCurrency, getMonthName, getCurrentMonthYear, getTodayISO } from '../lib/formatters'
 import Toast from '../components/Toast'
 
@@ -29,6 +29,7 @@ export default function Recurring() {
 
   const [recurring, setRecurring]   = useState([])
   const [categories, setCategories] = useState([])
+  const [familyMembers, setFamilyMembers] = useState([])
   const [loading, setLoading]       = useState(true)
   const [toast, setToast]           = useState(null)
   const [showModal, setShowModal]   = useState(false)
@@ -40,7 +41,7 @@ export default function Recurring() {
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
-    if (familyId) { loadRecurring(); loadCategories() }
+    if (familyId) { loadRecurring(); loadCategories(); loadMembers() }
   }, [familyId])
 
   async function loadRecurring() {
@@ -52,6 +53,10 @@ export default function Recurring() {
 
   async function loadCategories() {
     try { setCategories(await getCategories(familyId)) } catch {}
+  }
+
+  async function loadMembers() {
+    try { setFamilyMembers(await getFamilyMembers(familyId)) } catch {}
   }
 
   function openAdd() { setForm(EMPTY_FORM); setEditingId(null); setShowModal(true) }
@@ -68,11 +73,11 @@ export default function Recurring() {
     try {
       const payload = { family_id: familyId, description: form.description.trim(), amount: parseFloat(form.amount), day_of_month: parseInt(form.day_of_month), category_id: form.category_id || null, payment_type: form.payment_type, shared: form.shared }
       if (editingId) {
-        const updated = await updateRecurring(editingId, payload)
+        const updated = await updateRecurring(editingId, { ...payload })
         setRecurring(prev => prev.map(r => r.id === editingId ? updated : r))
         setToast({ type: 'success', text: 'Recorrente atualizada!' })
       } else {
-        const created = await addRecurring({ ...payload, active: true })
+        const created = await addRecurring({ ...payload, active: true, user_id: user.id })
         setRecurring(prev => [...prev, created].sort((a, b) => a.day_of_month - b.day_of_month))
         setToast({ type: 'success', text: 'Despesa recorrente criada!' })
       }
@@ -193,7 +198,12 @@ export default function Recurring() {
                             <td data-label="Dia"><span className="badge badge-primary">Dia {r.day_of_month}</span></td>
                             <td data-label="Categoria">{r.hh_categories?.icon || '💰'} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.hh_categories?.name || '—'}</span></td>
                             <td data-label="Forma"><span className="badge badge-neutral">{PAYMENT_LABELS[r.payment_type] || r.payment_type}</span></td>
-                            <td data-label="Tipo">{r.shared ? <span className="badge badge-primary">Compartilhado</span> : <span className="badge badge-neutral">Pessoal</span>}</td>
+                            <td data-label="Tipo">
+                              {r.shared
+                                ? <span className="badge badge-primary">Compartilhado</span>
+                                : <span className="badge badge-neutral">Pessoal {r.user_id ? `• ${familyMembers.find(m => m.user_id === r.user_id)?.display_name || ''}` : ''}</span>
+                              }
+                            </td>
                             <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)' }}>{formatCurrency(r.amount)}</td>
                             <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                               <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(r)} title="Editar">✏️</button>
