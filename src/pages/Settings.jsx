@@ -69,7 +69,7 @@ export default function Settings() {
       await removeMember(targetUserId, familyId)
       setToast({ type: 'success', text: `${name} foi removido(a) da família.` })
       loadMembers()
-    } catch { setToast({ type: 'error', text: 'Erro ao remover membro.' }) }
+    } catch (err) { setToast({ type: 'error', text: err.message || 'Erro ao remover membro.' }) }
     finally  { setRemoving(null) }
   }
 
