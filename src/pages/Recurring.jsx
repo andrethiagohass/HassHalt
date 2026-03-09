@@ -171,12 +171,12 @@ export default function Recurring() {
                     Ativas ({active.length})
                   </h2>
                   <div className="table-wrapper">
-                    <table>
+                    <table className="mobile-cards">
                       <thead>
                         <tr>
+                          <th>Descrição</th>
                           <th>Dia</th>
                           <th>Categoria</th>
-                          <th>Descrição</th>
                           <th>Forma</th>
                           <th>Tipo</th>
                           <th style={{ textAlign: 'right' }}>Valor</th>
@@ -186,13 +186,13 @@ export default function Recurring() {
                       <tbody>
                         {active.map(r => (
                           <tr key={r.id}>
-                            <td><span className="badge badge-primary">Dia {r.day_of_month}</span></td>
-                            <td>{r.hh_categories?.icon || '💰'} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.hh_categories?.name || '—'}</span></td>
-                            <td style={{ fontWeight: 500 }}>{r.description}</td>
-                            <td><span className="badge badge-neutral">{PAYMENT_OPTIONS.find(p => p.value === r.payment_type)?.label?.replace(/[^\w\s]/g, '').trim() || r.payment_type}</span></td>
-                            <td>{r.shared ? <span className="badge badge-primary">Compartilhado</span> : <span className="badge badge-neutral">Pessoal</span>}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)' }}>{formatCurrency(r.amount)}</td>
-                            <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <td className="td-desc"><strong>{r.description}</strong></td>
+                            <td data-label="Dia"><span className="badge badge-primary">Dia {r.day_of_month}</span></td>
+                            <td data-label="Categoria">{r.hh_categories?.icon || '💰'} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.hh_categories?.name || '—'}</span></td>
+                            <td data-label="Forma"><span className="badge badge-neutral">{PAYMENT_OPTIONS.find(p => p.value === r.payment_type)?.label?.replace(/[^\w\s]/g, '').trim() || r.payment_type}</span></td>
+                            <td data-label="Tipo">{r.shared ? <span className="badge badge-primary">Compartilhado</span> : <span className="badge badge-neutral">Pessoal</span>}</td>
+                            <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)' }}>{formatCurrency(r.amount)}</td>
+                            <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                               <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(r)} title="Editar">✏️</button>
                               <button className="btn-icon" style={{ marginRight: '0.25rem', color: 'var(--warning-color)' }} onClick={() => handleToggleActive(r)} title="Pausar">⏸️</button>
                               <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }} onClick={() => handleDelete(r.id)} title="Excluir">🗑️</button>

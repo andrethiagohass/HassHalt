@@ -293,9 +293,9 @@ export default function Expenses() {
                       const badge = PAYMENT_BADGE[expense.payment_type] || PAYMENT_BADGE.pix
                       return (
                         <tr key={expense.id}>
-                          <td className="td-desc">
-                            <strong>{expense.description}</strong>
-                            {expense.notes && <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '0.4rem', fontSize: '0.8rem' }}>— {expense.notes}</span>}
+                          <td className="td-desc" style={{ maxWidth: '220px' }}>
+                            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expense.description}</div>
+                            {expense.notes && <div style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expense.notes}</div>}
                           </td>
                           <td data-label="Data" style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                             {formatDate(expense.date)}
