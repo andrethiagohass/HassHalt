@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getRecurring, addRecurring, updateRecurring, deleteRecurring, getCategories, generateMonthExpenses } from '../lib/supabase'
 import { formatCurrency, getMonthName, getCurrentMonthYear, getTodayISO } from '../lib/formatters'
@@ -252,8 +253,8 @@ export default function Recurring() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Valor (R$) *</label>
-                    <input className="form-control" type="number" step="0.01" min="0.01" required placeholder="0,00"
-                      value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
+                    <CurrencyInput className="form-control" required
+                      value={form.amount} onChange={v => setForm(f => ({ ...f, amount: v }))} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Dia do vencimento *</label>

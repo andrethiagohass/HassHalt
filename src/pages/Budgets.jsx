@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getBudgetSummary, upsertBudget, deleteBudget } from '../lib/supabase'
 import { formatCurrency, getMonthName, getCurrentMonthYear } from '../lib/formatters'
@@ -159,12 +160,11 @@ export default function Budgets() {
                       <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
                         {editing[cat.id] !== undefined ? (
                           <>
-                            <input
+                            <CurrencyInput
                               className="form-control"
-                              type="number" step="0.01" min="0.01"
                               style={{ width: '120px' }}
                               value={editing[cat.id]}
-                              onChange={e => setEditing(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                              onChange={v => setEditing(prev => ({ ...prev, [cat.id]: v }))}
                               autoFocus
                             />
                             <button className="btn btn-primary btn-sm" onClick={() => saveBudget(cat.id)} disabled={saving[cat.id]}>
@@ -207,12 +207,11 @@ export default function Budgets() {
                     </div>
                     {editing[cat.id] !== undefined ? (
                       <div style={{ display: 'flex', gap: '0.375rem' }}>
-                        <input
+                        <CurrencyInput
                           className="form-control"
-                          type="number" step="0.01" min="0.01"
-                          placeholder="Limite R$"
+                          placeholder="0,00"
                           value={editing[cat.id]}
-                          onChange={e => setEditing(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                          onChange={v => setEditing(prev => ({ ...prev, [cat.id]: v }))}
                           autoFocus
                           onKeyDown={e => { if (e.key === 'Enter') saveBudget(cat.id); if (e.key === 'Escape') cancelEdit(cat.id) }}
                         />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
 import {
   getExpenses, addExpense, updateExpense, deleteExpense, getCategories, getFamilyMembers
@@ -371,14 +372,10 @@ export default function Expenses() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Valor (R$) *</label>
-                    <input
+                    <CurrencyInput
                       className="form-control"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0,00"
                       value={form.amount}
-                      onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                      onChange={v => setForm(f => ({ ...f, amount: v }))}
                       required
                     />
                   </div>

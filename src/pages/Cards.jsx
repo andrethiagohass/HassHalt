@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
 import { getCards, addCard, updateCard, deleteCard, getCardStatement } from '../lib/supabase'
 import { formatCurrency, getMonthName, getCurrentMonthYear, formatDate } from '../lib/formatters'
@@ -235,8 +236,8 @@ export default function Cards() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Limite (R$)</label>
-                    <input className="form-control" type="number" step="0.01" min="0" placeholder="5000,00"
-                      value={form.limit_amount} onChange={e => setForm(f => ({ ...f, limit_amount: e.target.value }))} />
+                    <CurrencyInput className="form-control" placeholder="5.000,00"
+                      value={form.limit_amount} onChange={v => setForm(f => ({ ...f, limit_amount: v }))} />
                   </div>
                 </div>
                 <div className="form-row">
