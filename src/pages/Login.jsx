@@ -53,7 +53,7 @@ export default function Login() {
       }}>
         {/* Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <img src="/logo.svg" alt="HassHalt" style={{ width: 64, height: 64, marginBottom: '1rem' }} />
+          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="HassHalt" style={{ width: 64, height: 64, marginBottom: '1rem' }} />
           <h1 style={{
             fontSize: '1.75rem',
             fontWeight: 800,
