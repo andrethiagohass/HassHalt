@@ -35,6 +35,8 @@
   --radius-sm:  6px;
   --radius-md:  10px;
   --radius-lg:  14px;
+
+  --primary-gradient: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -198,7 +200,9 @@ h1, h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
 }
+.card:hover { box-shadow: var(--shadow-md); }
 
 .card-body {
   padding: 1.25rem;
@@ -230,7 +234,21 @@ h1, h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-card.primary {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: white;
+}
+.stat-card.primary .stat-label,
+.stat-card.primary .stat-value,
+.stat-card.primary .stat-sub { color: rgba(255,255,255,0.9); }
 
 .stat-label {
   font-size: 0.8rem;
@@ -255,6 +273,12 @@ h1, h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
 /* ============================================
    GRIDS
    ============================================ */
+
+.grid-cols-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
 
 .grid-cols-3 {
   display: grid;
@@ -539,6 +563,18 @@ tbody td {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--border-light) 25%, #e8f0ec 50%, var(--border-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .loading-page {
   display: flex;
   flex-direction: column;
@@ -582,6 +618,13 @@ tbody td {
    RESPONSIVE
    ============================================ */
 
+/* Tablet */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .main-content {
     width: 100vw;
@@ -595,9 +638,16 @@ tbody td {
     margin-left: 0;
   }
 
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-cols-3 { grid-template-columns: 1fr; }
   .grid-cols-2 { grid-template-columns: 1fr; }
   .form-row    { grid-template-columns: 1fr; }
 
   .page-title { font-size: 1.35rem; }
 }
+
+/* Scrollbar polish */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

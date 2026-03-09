@@ -11,7 +11,6 @@ const NAV_MAIN = [
   { to: '/reports',   icon: '📄', label: 'Relatórios' },
 ]
 
-const COMING_SOON = []
 
 export default function Sidebar({ isOpen, onClose, isCollapsed }) {
   return (
@@ -35,22 +34,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed }) {
               </NavLink>
             ))}
           </div>
-
-          {!isCollapsed && (
-            <>
-              <hr className="nav-divider" />
-              <div className="nav-section">
-                <p className="nav-section-title">Em breve</p>
-                {COMING_SOON.map(item => (
-                  <div key={item.label} className="nav-link disabled">
-                    <span className="nav-link-icon">{item.icon}</span>
-                    <span className="nav-link-text">{item.label}</span>
-                    <span className="nav-soon-badge">Em breve</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
 
           <hr className="nav-divider" />
           <div className="nav-section">

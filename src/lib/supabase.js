@@ -24,13 +24,16 @@ const DEFAULT_CATEGORIES = [
 export async function getOrCreateFamily(userId, userEmail) {
   const { data: members, error: memberError } = await supabase
     .from('hh_family_members')
-    .select('family_id')
+    .select('family_id, display_name')
     .eq('user_id', userId)
     .limit(1)
 
   if (memberError) throw memberError
   const member = members?.[0]
-  if (member?.family_id) return member.family_id
+  if (member?.family_id) return {
+    familyId: member.family_id,
+    displayName: member.display_name || userEmail.split('@')[0],
+  }
 
   const newFamilyId = crypto.randomUUID()
 
@@ -54,7 +57,7 @@ export async function getOrCreateFamily(userId, userEmail) {
   )
   if (catError) console.error('Category seed error:', catError)
 
-  return newFamilyId
+  return { familyId: newFamilyId, displayName: userEmail.split('@')[0] }
 }
 
 export async function getCategories(familyId) {

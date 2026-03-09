@@ -7,6 +7,7 @@ const AuthContext = createContext({})
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [familyId, setFamilyId] = useState(null)
+  const [displayName, setDisplayName] = useState(null)
   const [loading, setLoading] = useState(true)
   const [familyError, setFamilyError] = useState(null)
 
@@ -33,12 +34,14 @@ export function AuthProvider({ children }) {
       try {
         if (session?.user) {
           setUser(session.user)
-          const fid = await getOrCreateFamily(session.user.id, session.user.email)
+          const { familyId: fid, displayName: dn } = await getOrCreateFamily(session.user.id, session.user.email)
           setFamilyId(fid)
+          setDisplayName(dn)
           setFamilyError(null)
         } else {
           setUser(null)
           setFamilyId(null)
+          setDisplayName(null)
           setFamilyError(null)
         }
       } catch (err) {
@@ -58,7 +61,7 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ user, familyId, loading, familyError, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, familyId, displayName, loading, familyError, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -13,6 +13,14 @@ build/
 .env.local
 .env.*.local
 
+# Database scripts — keep private (exposes schema and policies)
+supabase-*.sql
+*.sql
+
+# Internal startup scripts
+start_quick.ps1
+start_quick.sh
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

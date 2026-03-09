@@ -53,6 +53,7 @@ export default function Expenses() {
 
   const [filterCategory, setFilterCategory] = useState('all')
   const [filterType, setFilterType]         = useState('all')
+  const [filterSearch, setFilterSearch]     = useState('')
 
   useEffect(() => {
     if (!familyId) return
@@ -162,6 +163,7 @@ export default function Expenses() {
     if (filterCategory !== 'all' && e.category_id !== filterCategory) return false
     if (filterType === 'shared'   && !e.shared)  return false
     if (filterType === 'personal' && e.shared)   return false
+    if (filterSearch && !e.description.toLowerCase().includes(filterSearch.toLowerCase())) return false
     return true
   })
 
@@ -187,6 +189,14 @@ export default function Expenses() {
 
       {/* Filters */}
       <div className="filters-bar">
+        <input
+          className="form-control"
+          type="text"
+          placeholder="🔍 Buscar..."
+          style={{ maxWidth: '180px' }}
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
+        />
         <select
           className="form-control"
           style={{ width: 'auto' }}

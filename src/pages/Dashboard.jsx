@@ -4,6 +4,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { getDashboardSummary, getMemberSpending } from '../lib/supabase'
 import { formatCurrency, formatDate, getMonthName, getCurrentMonthYear } from '../lib/formatters'
 
+function getGreeting(name) {
+  const h = new Date().getHours()
+  const salut = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
+  return `${salut}, ${name}! 👋`
+}
+
 const CHART_COLORS = [
   '#0f766e','#14b8a6','#0891b2','#7c3aed','#db2777',
   '#ea580c','#ca8a04','#65a30d','#dc2626','#2563eb',
@@ -13,7 +19,7 @@ const CHART_COLORS = [
 const PAYMENT_LABELS = { pix: 'Pix', debit: 'Débito', credit: 'Crédito', cash: 'Dinheiro' }
 
 export default function Dashboard() {
-  const { familyId } = useAuth()
+  const { familyId, displayName } = useAuth()
   const { month: curMonth, year: curYear } = getCurrentMonthYear()
 
   const [month, setMonth] = useState(curMonth)
@@ -52,8 +58,8 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Visão geral dos seus gastos</p>
+          <h1 className="page-title">{displayName ? getGreeting(displayName) : 'Dashboard'}</h1>
+          <p className="page-subtitle">Visão geral dos seus gastos · {getMonthName(month)} {year}</p>
         </div>
         <div className="page-actions">
           {/* Month/Year selector */}
@@ -84,19 +90,43 @@ export default function Dashboard() {
       {error && <div className="alert alert-error">{error}</div>}
 
       {loading ? (
-        <div className="loading-page">
-          <div className="loading-spinner" />
-          <span>Carregando...</span>
-        </div>
+        <>
+          <div className="grid-cols-3" style={{ marginBottom: '1.25rem' }}>
+            {[0,1,2].map(i => (
+              <div key={i} className="stat-card">
+                <div className="skeleton" style={{ height: '0.75rem', width: '60%', marginBottom: '0.5rem' }} />
+                <div className="skeleton" style={{ height: '1.75rem', width: '80%', marginBottom: '0.375rem' }} />
+                <div className="skeleton" style={{ height: '0.65rem', width: '40%' }} />
+              </div>
+            ))}
+          </div>
+          <div className="grid-cols-2">
+            {[0,1].map(i => (
+              <div key={i} className="card">
+                <div className="card-header"><div className="skeleton" style={{ height: '0.75rem', width: '40%' }} /></div>
+                <div className="card-body">
+                  {[0,1,2,3].map(j => (
+                    <div key={j} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.875rem' }}>
+                      <div className="skeleton" style={{ width: '2rem', height: '2rem', borderRadius: '50%', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div className="skeleton" style={{ height: '0.75rem', width: '70%', marginBottom: '0.375rem' }} />
+                        <div className="skeleton" style={{ height: '0.6rem', width: '45%' }} />
+                      </div>
+                      <div className="skeleton" style={{ height: '0.75rem', width: '4rem' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : data && (
         <>
           {/* Summary Cards */}
           <div className="grid-cols-3" style={{ marginBottom: '1.25rem' }}>
-            <div className="stat-card">
+            <div className="stat-card primary">
               <span className="stat-label">💸 Total Gasto</span>
-              <span className="stat-value" style={{ color: 'var(--primary-color)' }}>
-                {formatCurrency(data.total)}
-              </span>
+              <span className="stat-value">{formatCurrency(data.total)}</span>
               <span className="stat-sub">{getMonthName(month)} {year}</span>
             </div>
 
