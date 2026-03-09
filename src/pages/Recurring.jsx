@@ -17,7 +17,7 @@ const EMPTY_FORM = {
   amount: '',
   day_of_month: '5',
   category_id: '',
-  payment_type: 'debit',
+  payment_type: 'credit',
   shared: true,
 }
 

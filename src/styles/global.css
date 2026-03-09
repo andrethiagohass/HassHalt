@@ -473,8 +473,18 @@ tfoot td {
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: slideInModal 0.2s ease;
+}
+
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @keyframes slideInModal {
@@ -510,6 +520,10 @@ tfoot td {
 
 .modal-body {
   padding: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
@@ -712,10 +726,13 @@ tfoot td {
   .modal-header { flex-shrink: 0; }
   .modal-footer { flex-shrink: 0; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   .modal-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    padding: 1rem;
+  }
+  .modal-body .form-group {
+    margin-bottom: 0.625rem;
+  }
+  .modal-body .form-row {
+    gap: 0.5rem;
   }
 
   /* Table → scrollable on mobile */

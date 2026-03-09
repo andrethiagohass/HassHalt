@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   amount: '',
   date: getTodayISO(),
   category_id: '',
-  payment_type: 'pix',
+  payment_type: 'credit',
   shared: false,
   paid_by: '',
   notes: '',
