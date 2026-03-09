@@ -386,14 +386,13 @@ export async function getMemberSpending(familyId, month, year) {
 }
 
 export async function removeMember(targetUserId, familyId) {
-  const { data, error } = await supabase
+  const { error, count } = await supabase
     .from('hh_family_members')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('user_id', targetUserId)
     .eq('family_id', familyId)
-    .select()
   if (error) throw error
-  if (!data || data.length === 0) throw new Error('Sem permissão para remover. Execute o SQL de correção no Supabase.')
+  if (count === 0) throw new Error('Sem permissão para remover. Verifique se você é admin da família.')
 }
 
 export async function updateDisplayName(userId, familyId, name) {
