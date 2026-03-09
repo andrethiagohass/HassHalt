@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   getExpenses, addExpense, updateExpense, deleteExpense, getCategories, getFamilyMembers
@@ -35,6 +36,7 @@ const EMPTY_FORM = {
 
 export default function Expenses() {
   const { familyId, user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { month: curMonth, year: curYear } = getCurrentMonthYear()
 
   const [month, setMonth]         = useState(curMonth)
@@ -59,6 +61,13 @@ export default function Expenses() {
     if (!familyId) return
     loadCategories()
   }, [familyId])
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setSearchParams({}, { replace: true })
+      openAdd()
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (!familyId) return

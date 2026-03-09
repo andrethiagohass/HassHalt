@@ -381,7 +381,7 @@ export default function Reports() {
                       })}
                   </tbody>
                   <tfoot>
-                    <tr style={{ borderTop: '2px solid var(--border-color)' }}>
+                    <tr>
                       <td style={{ fontWeight: 700 }}>Total</td>
                       {comparison.rows.map((r, i) => {
                         const t = Object.values(r.byCategory).reduce((s, v) => s + v, 0)

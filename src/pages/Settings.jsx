@@ -4,7 +4,7 @@ import { getFamilyMembers, updateDisplayName, joinFamily, removeMember } from '.
 import Toast from '../components/Toast'
 
 export default function Settings() {
-  const { user, familyId } = useAuth()
+  const { user, familyId, setDisplayName: setContextDisplayName } = useAuth()
   const [members, setMembers]       = useState([])
   const [loading, setLoading]       = useState(true)
   const [toast, setToast]           = useState(null)
@@ -32,13 +32,16 @@ export default function Settings() {
 
   async function handleSaveName(e) {
     e.preventDefault()
+    if (!displayName.trim()) return
     setSavingName(true)
     try {
       await updateDisplayName(user.id, familyId, displayName.trim())
-      setToast({ type: 'success', text: 'Nome atualizado!' })
+      setContextDisplayName(displayName.trim())
+      setToast({ type: 'success', text: 'Nome atualizado com sucesso!' })
       loadMembers()
-    } catch { setToast({ type: 'error', text: 'Erro ao salvar nome.' }) }
-    finally  { setSavingName(false) }
+    } catch (err) {
+      setToast({ type: 'error', text: err.message || 'Erro ao salvar nome.' })
+    } finally  { setSavingName(false) }
   }
 
   async function handleJoin(e) {

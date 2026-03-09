@@ -397,6 +397,18 @@ tbody td {
   vertical-align: middle;
 }
 
+tfoot tr {
+  border-top: 2px solid var(--border-color);
+}
+
+tfoot td {
+  padding: 0.75rem 1rem;
+  background: var(--border-light);
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .table-footer {
   padding: 0.75rem 1rem;
   background: var(--border-light);

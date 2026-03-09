@@ -395,12 +395,14 @@ export async function removeMember(targetUserId, familyId) {
 }
 
 export async function updateDisplayName(userId, familyId, name) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('hh_family_members')
     .update({ display_name: name })
     .eq('user_id', userId)
     .eq('family_id', familyId)
+    .select()
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('Sem permissão para atualizar. Execute o SQL de correção no Supabase.')
 }
 
 // ============================================================
