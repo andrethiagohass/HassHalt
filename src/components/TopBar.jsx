@@ -48,7 +48,7 @@ export default function TopBar({ onMenuClick, onCollapseToggle, sidebarCollapsed
         </button>
 
         <div className="topbar-brand">
-          <img src="/logo.svg" alt="HassHalt" className="topbar-logo" />
+          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="HassHalt" className="topbar-logo" />
           <span className="topbar-brand-name">
             Hass<span>Halt</span>
           </span>
