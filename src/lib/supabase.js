@@ -386,13 +386,12 @@ export async function getMemberSpending(familyId, month, year) {
 }
 
 export async function removeMember(targetUserId, familyId) {
-  const { error, count } = await supabase
-    .from('hh_family_members')
-    .delete({ count: 'exact' })
-    .eq('user_id', targetUserId)
-    .eq('family_id', familyId)
-  if (error) throw error
-  if (count === 0) throw new Error('Sem permissão para remover. Verifique se você é admin da família.')
+  const { data, error } = await supabase.rpc('hh_admin_remove_member', {
+    p_target_user_id: targetUserId,
+    p_family_id:      familyId,
+  })
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('Membro não encontrado.')
 }
 
 export async function updateDisplayName(userId, familyId, name) {
