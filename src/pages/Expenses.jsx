@@ -318,7 +318,9 @@ export default function Expenses() {
                                 💑 {expense.paid_by ? (familyMembers.find(m => m.user_id === expense.paid_by)?.display_name || 'Membro') : 'Casal'}
                               </span>
                             ) : (
-                              <span className="badge badge-neutral">Pessoal</span>
+                              <span className="badge badge-neutral">
+                                Pessoal {expense.user_id ? `• ${familyMembers.find(m => m.user_id === expense.user_id)?.display_name || ''}` : ''}
+                              </span>
                             )}
                           </td>
                           <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>

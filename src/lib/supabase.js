@@ -331,7 +331,7 @@ export async function generateMonthExpenses(familyId, userId, month, year) {
   const lastDay = new Date(year, month, 0).getDate()
   const expenses = active.map(r => ({
     family_id:    familyId,
-    user_id:      userId,
+    user_id:      r.shared ? userId : (r.user_id || userId),
     category_id:  r.category_id,
     description:  r.description,
     amount:       r.amount,
