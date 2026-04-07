@@ -67,7 +67,15 @@ export default function Expenses() {
     if (searchParams.get('new') === '1') {
       setSearchParams({}, { replace: true })
       openAdd()
+      return
     }
+    const pCat   = searchParams.get('category')
+    const pMonth = searchParams.get('month')
+    const pYear  = searchParams.get('year')
+    if (pCat)   setFilterCategory(pCat)
+    if (pMonth) setMonth(Number(pMonth))
+    if (pYear)  setYear(Number(pYear))
+    if (pCat || pMonth || pYear) setSearchParams({}, { replace: true })
   }, [searchParams])
 
   useEffect(() => {

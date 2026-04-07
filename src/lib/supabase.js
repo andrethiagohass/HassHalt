@@ -161,8 +161,8 @@ export async function getPersonalDashboard(familyId, month, year, viewAsUserId) 
     for (const e of list) {
       const cat = e.hh_categories
       if (!cat) continue
-      if (!byCategory[cat.name]) byCategory[cat.name] = { name: cat.name, icon: cat.icon, color: cat.color, total: 0 }
-      byCategory[cat.name].total += Number(e.amount)
+      if (!byCategory[cat.id]) byCategory[cat.id] = { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, total: 0 }
+      byCategory[cat.id].total += Number(e.amount)
     }
     return Object.values(byCategory).sort((a, b) => b.total - a.total)
   }

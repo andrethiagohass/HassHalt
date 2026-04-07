@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getPersonalDashboard, getFamilyMembers } from '../lib/supabase'
 import { formatCurrency, formatDate, getMonthName, getCurrentMonthYear } from '../lib/formatters'
@@ -16,7 +16,7 @@ const CHART_COLORS = [
   '#c026d3','#0369a1','#475569',
 ]
 
-function CategoryBars({ breakdown, total, emptyText }) {
+function CategoryBars({ breakdown, total, emptyText, month, year }) {
   if (breakdown.length === 0) {
     return (
       <div className="empty-state">
@@ -29,8 +29,9 @@ function CategoryBars({ breakdown, total, emptyText }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
       {breakdown.map((cat, i) => {
         const pct = total > 0 ? (cat.total / total) * 100 : 0
+        const linkTo = `/expenses?category=${cat.id}&month=${month}&year=${year}`
         return (
-          <div key={cat.name}>
+          <Link key={cat.id || cat.name} to={linkTo} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
               <span>{cat.icon} {cat.name}</span>
               <span style={{ fontWeight: 600 }}>{formatCurrency(cat.total)}</span>
@@ -47,7 +48,7 @@ function CategoryBars({ breakdown, total, emptyText }) {
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
               {pct.toFixed(1)}%
             </div>
-          </div>
+          </Link>
         )
       })}
     </div>
@@ -261,7 +262,7 @@ export default function Dashboard() {
             <div className="card">
               <div className="card-header"><span className="card-title">Categorias (Pessoal)</span></div>
               <div className="card-body">
-                <CategoryBars breakdown={data.personalBreakdown} total={data.personalTotal} emptyText="Nenhum gasto pessoal." />
+                <CategoryBars breakdown={data.personalBreakdown} total={data.personalTotal} emptyText="Nenhum gasto pessoal." month={month} year={year} />
               </div>
             </div>
             <div className="card">
@@ -288,7 +289,7 @@ export default function Dashboard() {
             <div className="card">
               <div className="card-header"><span className="card-title">Categorias (Casal)</span></div>
               <div className="card-body">
-                <CategoryBars breakdown={data.coupleBreakdown} total={data.coupleTotal} emptyText="Nenhum gasto compartilhado." />
+                <CategoryBars breakdown={data.coupleBreakdown} total={data.coupleTotal} emptyText="Nenhum gasto compartilhado." month={month} year={year} />
               </div>
             </div>
             <div className="card">
