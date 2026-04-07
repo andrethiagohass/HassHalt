@@ -16,7 +16,7 @@ const CHART_COLORS = [
   '#c026d3','#0369a1','#475569',
 ]
 
-function CategoryBars({ breakdown, total, emptyText, month, year }) {
+function CategoryBars({ breakdown, total, emptyText, month, year, type }) {
   if (breakdown.length === 0) {
     return (
       <div className="empty-state">
@@ -29,7 +29,7 @@ function CategoryBars({ breakdown, total, emptyText, month, year }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
       {breakdown.map((cat, i) => {
         const pct = total > 0 ? (cat.total / total) * 100 : 0
-        const linkTo = `/expenses?category=${cat.id}&month=${month}&year=${year}`
+        const linkTo = `/expenses?category=${cat.id}&month=${month}&year=${year}${type ? `&type=${type}` : ''}`
         return (
           <Link key={cat.id || cat.name} to={linkTo} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
@@ -262,7 +262,7 @@ export default function Dashboard() {
             <div className="card">
               <div className="card-header"><span className="card-title">Categorias (Pessoal)</span></div>
               <div className="card-body">
-                <CategoryBars breakdown={data.personalBreakdown} total={data.personalTotal} emptyText="Nenhum gasto pessoal." month={month} year={year} />
+                <CategoryBars breakdown={data.personalBreakdown} total={data.personalTotal} emptyText="Nenhum gasto pessoal." month={month} year={year} type="personal" />
               </div>
             </div>
             <div className="card">
@@ -289,7 +289,7 @@ export default function Dashboard() {
             <div className="card">
               <div className="card-header"><span className="card-title">Categorias (Casal)</span></div>
               <div className="card-body">
-                <CategoryBars breakdown={data.coupleBreakdown} total={data.coupleTotal} emptyText="Nenhum gasto compartilhado." month={month} year={year} />
+                <CategoryBars breakdown={data.coupleBreakdown} total={data.coupleTotal} emptyText="Nenhum gasto compartilhado." month={month} year={year} type="shared" />
               </div>
             </div>
             <div className="card">

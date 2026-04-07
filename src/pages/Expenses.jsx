@@ -72,10 +72,12 @@ export default function Expenses() {
     const pCat   = searchParams.get('category')
     const pMonth = searchParams.get('month')
     const pYear  = searchParams.get('year')
+    const pType  = searchParams.get('type')
     if (pCat)   setFilterCategory(pCat)
     if (pMonth) setMonth(Number(pMonth))
     if (pYear)  setYear(Number(pYear))
-    if (pCat || pMonth || pYear) setSearchParams({}, { replace: true })
+    if (pType)  setFilterType(pType)
+    if (pCat || pMonth || pYear || pType) setSearchParams({}, { replace: true })
   }, [searchParams])
 
   useEffect(() => {
