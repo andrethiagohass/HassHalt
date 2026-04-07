@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getDashboardSummary, getMemberSpending } from '../lib/supabase'
+import { getPersonalDashboard, getFamilyMembers } from '../lib/supabase'
 import { formatCurrency, formatDate, getMonthName, getCurrentMonthYear } from '../lib/formatters'
 
 function getGreeting(name) {
@@ -16,35 +16,125 @@ const CHART_COLORS = [
   '#c026d3','#0369a1','#475569',
 ]
 
-const PAYMENT_LABELS = { pix: 'Pix', debit: 'Débito', credit: 'Crédito', cash: 'Dinheiro' }
+function CategoryBars({ breakdown, total, emptyText }) {
+  if (breakdown.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">📊</div>
+        <p className="empty-state-text">{emptyText || 'Nenhum gasto neste período.'}</p>
+      </div>
+    )
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+      {breakdown.map((cat, i) => {
+        const pct = total > 0 ? (cat.total / total) * 100 : 0
+        return (
+          <div key={cat.name}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
+              <span>{cat.icon} {cat.name}</span>
+              <span style={{ fontWeight: 600 }}>{formatCurrency(cat.total)}</span>
+            </div>
+            <div style={{ height: '6px', borderRadius: '100px', background: 'var(--border-light)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${pct}%`,
+                background: cat.color || CHART_COLORS[i % CHART_COLORS.length],
+                borderRadius: '100px',
+                transition: 'width 0.4s ease',
+              }} />
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
+              {pct.toFixed(1)}%
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function RecentList({ expenses, emptyText }) {
+  if (expenses.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">💸</div>
+        <p className="empty-state-text">{emptyText || 'Nenhum lançamento.'}</p>
+      </div>
+    )
+  }
+  return (
+    <div>
+      {expenses.map(expense => (
+        <div key={expense.id} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-light)', gap: '0.75rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+            <span style={{ fontSize: '1.25rem', width: '2rem', textAlign: 'center', flexShrink: 0 }}>
+              {expense.hh_categories?.icon || '💰'}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 500, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {expense.description}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {formatDate(expense.date)} · {expense.hh_categories?.name}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary-color)' }}>
+              {formatCurrency(expense.amount)}
+            </span>
+            {expense.shared && (
+              <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>Casal</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Dashboard() {
-  const { familyId, displayName } = useAuth()
+  const { familyId, displayName, user } = useAuth()
   const { month: curMonth, year: curYear } = getCurrentMonthYear()
 
-  const [month, setMonth] = useState(curMonth)
-  const [year, setYear]   = useState(curYear)
-  const [data, setData]       = useState(null)
-  const [members, setMembers]  = useState([])
-  const [loading, setLoading]  = useState(true)
-  const [error, setError]      = useState(null)
+  const [month, setMonth]       = useState(curMonth)
+  const [year, setYear]         = useState(curYear)
+  const [viewAs, setViewAs]     = useState(null) // user_id to view as
+  const [members, setMembers]   = useState([])
+  const [data, setData]         = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
 
+  // Load family members once
   useEffect(() => {
     if (!familyId) return
+    getFamilyMembers(familyId).then(mems => {
+      setMembers(mems)
+      if (!viewAs && user) setViewAs(user.id)
+    }).catch(() => {})
+  }, [familyId])
+
+  // Set viewAs to current user when user loads
+  useEffect(() => {
+    if (user && !viewAs) setViewAs(user.id)
+  }, [user])
+
+  useEffect(() => {
+    if (!familyId || !viewAs) return
     loadData()
-  }, [familyId, month, year])
+  }, [familyId, month, year, viewAs])
 
   async function loadData() {
     setLoading(true)
     setError(null)
     try {
-      const [summary, memberSpend] = await Promise.all([
-        getDashboardSummary(familyId, month, year),
-        getMemberSpending(familyId, month, year),
-      ])
-      setData(summary)
-      setMembers(memberSpend)
-    } catch (err) {
+      const result = await getPersonalDashboard(familyId, month, year, viewAs)
+      setData(result)
+    } catch {
       setError('Erro ao carregar dados.')
     } finally {
       setLoading(false)
@@ -52,6 +142,8 @@ export default function Dashboard() {
   }
 
   const years = [curYear - 1, curYear, curYear + 1]
+  const viewingName = members.find(m => m.user_id === viewAs)?.display_name || displayName || ''
+  const isMe = viewAs === user?.id
 
   return (
     <div>
@@ -59,10 +151,26 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1 className="page-title">{displayName ? getGreeting(displayName) : 'Dashboard'}</h1>
-          <p className="page-subtitle">Visão geral dos seus gastos · {getMonthName(month)} {year}</p>
+          <p className="page-subtitle">
+            {isMe ? 'Visão dos seus gastos' : `Visualizando como ${viewingName}`} · {getMonthName(month)} {year}
+          </p>
         </div>
         <div className="page-actions">
-          {/* Month/Year selector */}
+          {/* View As selector */}
+          {members.length > 1 && (
+            <select
+              className="form-control"
+              style={{ width: 'auto', fontWeight: 600 }}
+              value={viewAs || ''}
+              onChange={e => setViewAs(e.target.value)}
+            >
+              {members.map(m => (
+                <option key={m.user_id} value={m.user_id}>
+                  👁️ {m.display_name}{m.user_id === user?.id ? ' (eu)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             className="form-control"
             style={{ width: 'auto' }}
@@ -82,7 +190,7 @@ export default function Dashboard() {
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button className="btn btn-secondary" onClick={loadData} disabled={loading}>
-            🔄 Atualizar
+            🔄
           </button>
         </div>
       </div>
@@ -124,156 +232,75 @@ export default function Dashboard() {
         <>
           {/* Summary Cards */}
           <div className="grid-cols-3" style={{ marginBottom: '1.25rem' }}>
-            <div className="stat-card primary">
-              <span className="stat-label">💸 Total Gasto</span>
-              <span className="stat-value">{formatCurrency(data.total)}</span>
-              <span className="stat-sub">{getMonthName(month)} {year}</span>
+            <div className="stat-card" style={{ borderLeft: '4px solid var(--primary-color)' }}>
+              <span className="stat-label">🧑 Gastos Pessoais</span>
+              <span className="stat-value">{formatCurrency(data.personalTotal)}</span>
+              <span className="stat-sub">{data.personalCount} {data.personalCount === 1 ? 'lançamento' : 'lançamentos'}</span>
             </div>
 
-            <div className="stat-card">
-              <span className="stat-label">🧾 Lançamentos</span>
-              <span className="stat-value">{data.count}</span>
-              <span className="stat-sub">{data.count === 1 ? 'gasto registrado' : 'gastos registrados'}</span>
-            </div>
-
-            <div className="stat-card">
-              <span className="stat-label">🏆 Maior Categoria</span>
-              <span className="stat-value" style={{ fontSize: '1.25rem' }}>
-                {data.topCategory ? `${data.topCategory.icon} ${data.topCategory.name}` : '—'}
-              </span>
+            <div className="stat-card" style={{ borderLeft: '4px solid var(--accent-color)' }}>
+              <span className="stat-label">💑 Gastos do Casal</span>
+              <span className="stat-value">{formatCurrency(data.coupleTotal)}</span>
               <span className="stat-sub">
-                {data.topCategory ? formatCurrency(data.topCategory.total) : 'Nenhum gasto'}
+                {isMe ? 'Eu paguei' : `${viewingName} pagou`}: {formatCurrency(data.paidByMeTotal)} ({data.paidByMeCount})
               </span>
+            </div>
+
+            <div className="stat-card primary">
+              <span className="stat-label">💸 Total Desembolsado</span>
+              <span className="stat-value">{formatCurrency(data.grandTotal)}</span>
+              <span className="stat-sub">Pessoal + pago do casal</span>
             </div>
           </div>
 
-          {/* Member spending */}
-          {members.length > 1 && (
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div className="grid-cols-2">
-                {members.map((m, i) => (
-                  <div key={m.userId} className="stat-card" style={{ borderLeft: `4px solid ${i === 0 ? 'var(--primary-color)' : 'var(--accent-color)'}` }}>
-                    <span className="stat-label">👤 {m.displayName}</span>
-                    <span className="stat-value" style={{ fontSize: '1.4rem' }}>{formatCurrency(m.total)}</span>
-                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      <span>Pessoal: {formatCurrency(m.personal)}</span>
-                      <span>Pagou do casal: {formatCurrency(m.sharedPaid)}</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Personal Section */}
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🧑 Gastos Pessoais {!isMe && <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'var(--text-muted)' }}>de {viewingName}</span>}
+          </h2>
+          <div className="grid-cols-2" style={{ alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+            <div className="card">
+              <div className="card-header"><span className="card-title">Categorias (Pessoal)</span></div>
+              <div className="card-body">
+                <CategoryBars breakdown={data.personalBreakdown} total={data.personalTotal} emptyText="Nenhum gasto pessoal." />
               </div>
             </div>
-          )}
-
-          {/* Chart + Recent */}
-          <div className="grid-cols-2" style={{ alignItems: 'flex-start' }}>
-            {/* Category breakdown */}
             <div className="card">
               <div className="card-header">
-                <span className="card-title">Gastos por Categoria</span>
+                <span className="card-title">Últimos Pessoais</span>
+                <Link to="/expenses" className="btn btn-ghost btn-sm">Ver todos</Link>
               </div>
-              <div className="card-body">
-                {data.categoryBreakdown.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-state-icon">📊</div>
-                    <p className="empty-state-text">Nenhum gasto neste período.</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    {data.categoryBreakdown.map((cat, i) => {
-                      const pct = data.total > 0 ? (cat.total / data.total) * 100 : 0
-                      return (
-                        <div key={cat.name}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-                            <span>{cat.icon} {cat.name}</span>
-                            <span style={{ fontWeight: 600 }}>{formatCurrency(cat.total)}</span>
-                          </div>
-                          <div style={{
-                            height: '6px', borderRadius: '100px',
-                            background: 'var(--border-light)', overflow: 'hidden',
-                          }}>
-                            <div style={{
-                              height: '100%',
-                              width: `${pct}%`,
-                              background: cat.color || CHART_COLORS[i % CHART_COLORS.length],
-                              borderRadius: '100px',
-                              transition: 'width 0.4s ease',
-                            }} />
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
-                            {pct.toFixed(1)}% do total
-                          </div>
-                        </div>
-                      )
-                    })}
+              <div className="card-body" style={{ padding: 0 }}>
+                <RecentList expenses={data.personalRecent} emptyText="Nenhum gasto pessoal." />
+                {data.personalRecent.length > 0 && (
+                  <div style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                    <Link to="/expenses" className="btn btn-ghost btn-sm">Ver todos →</Link>
                   </div>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Recent expenses */}
+          {/* Couple Section */}
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            💑 Gastos do Casal
+          </h2>
+          <div className="grid-cols-2" style={{ alignItems: 'flex-start' }}>
+            <div className="card">
+              <div className="card-header"><span className="card-title">Categorias (Casal)</span></div>
+              <div className="card-body">
+                <CategoryBars breakdown={data.coupleBreakdown} total={data.coupleTotal} emptyText="Nenhum gasto compartilhado." />
+              </div>
+            </div>
             <div className="card">
               <div className="card-header">
-                <span className="card-title">Últimos Lançamentos</span>
+                <span className="card-title">Últimos do Casal</span>
                 <Link to="/expenses" className="btn btn-ghost btn-sm">Ver todos</Link>
               </div>
               <div className="card-body" style={{ padding: 0 }}>
-                {data.recent.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-state-icon">💸</div>
-                    <p className="empty-state-text">Nenhum lançamento neste período.</p>
-                    <Link to="/expenses" className="btn btn-primary">+ Adicionar Gasto</Link>
-                  </div>
-                ) : (
-                  <div>
-                    {data.recent.map(expense => (
-                      <div key={expense.id} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1.25rem',
-                        borderBottom: '1px solid var(--border-light)',
-                        gap: '0.75rem',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
-                          <span style={{
-                            fontSize: '1.25rem',
-                            width: '2rem',
-                            textAlign: 'center',
-                            flex: 'shrink: 0',
-                          }}>
-                            {expense.hh_categories?.icon || '💰'}
-                          </span>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{
-                              fontWeight: 500,
-                              fontSize: '0.875rem',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              {expense.description}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              {formatDate(expense.date)} · {expense.hh_categories?.name}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary-color)' }}>
-                            {formatCurrency(expense.amount)}
-                          </span>
-                          {expense.shared && (
-                            <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>Compartilhado</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
-                      <Link to="/expenses" className="btn btn-ghost btn-sm">
-                        Ver todos os lançamentos →
-                      </Link>
-                    </div>
+                <RecentList expenses={data.coupleRecent} emptyText="Nenhum gasto compartilhado." />
+                {data.coupleRecent.length > 0 && (
+                  <div style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                    <Link to="/expenses" className="btn btn-ghost btn-sm">Ver todos →</Link>
                   </div>
                 )}
               </div>

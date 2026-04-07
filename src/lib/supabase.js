@@ -141,6 +141,47 @@ export async function getDashboardSummary(familyId, month, year) {
   return { total, count, topCategory, categoryBreakdown, recent }
 }
 
+export async function getPersonalDashboard(familyId, month, year, viewAsUserId) {
+  const expenses = await getExpenses(familyId, month, year)
+
+  // Personal = not shared AND (user created OR user paid)
+  const personal = expenses.filter(e => !e.shared && (e.user_id === viewAsUserId || e.paid_by === viewAsUserId))
+  // Couple = all shared expenses
+  const couple = expenses.filter(e => e.shared)
+  // How much this user paid of shared
+  const couplePaidByMe = couple.filter(e => e.paid_by === viewAsUserId)
+
+  const personalTotal = personal.reduce((s, e) => s + Number(e.amount), 0)
+  const coupleTotal   = couple.reduce((s, e) => s + Number(e.amount), 0)
+  const paidByMeTotal = couplePaidByMe.reduce((s, e) => s + Number(e.amount), 0)
+  const grandTotal    = personalTotal + paidByMeTotal
+
+  function buildBreakdown(list) {
+    const byCategory = {}
+    for (const e of list) {
+      const cat = e.hh_categories
+      if (!cat) continue
+      if (!byCategory[cat.name]) byCategory[cat.name] = { name: cat.name, icon: cat.icon, color: cat.color, total: 0 }
+      byCategory[cat.name].total += Number(e.amount)
+    }
+    return Object.values(byCategory).sort((a, b) => b.total - a.total)
+  }
+
+  return {
+    personalTotal,
+    personalCount: personal.length,
+    personalBreakdown: buildBreakdown(personal),
+    personalRecent: personal.slice(0, 5),
+    coupleTotal,
+    coupleCount: couple.length,
+    coupleBreakdown: buildBreakdown(couple),
+    coupleRecent: couple.slice(0, 5),
+    paidByMeTotal,
+    paidByMeCount: couplePaidByMe.length,
+    grandTotal,
+  }
+}
+
 // ============================================================
 // REPORTS
 // ============================================================
