@@ -379,6 +379,7 @@ export async function generateMonthExpenses(familyId, userId, month, year) {
     date: `${year}-${String(month).padStart(2,'0')}-${String(Math.min(r.day_of_month, lastDay)).padStart(2,'0')}`,
     payment_type: r.payment_type || 'debit',
     shared:       r.shared,
+    paid_by:      r.paid_by || null,
     paid:         false,
     notes:        'Gerado de despesa recorrente',
   }))

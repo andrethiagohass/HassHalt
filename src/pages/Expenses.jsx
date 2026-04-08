@@ -182,7 +182,7 @@ export default function Expenses() {
   const filtered = expenses.filter(e => {
     if (filterCategory !== 'all' && e.category_id !== filterCategory) return false
     if (filterType === 'shared'   && !e.shared)  return false
-    if (filterType === 'personal' && e.shared)   return false
+    if (filterType === 'personal' && (e.shared || e.user_id !== user.id)) return false
     if (filterSearch && !e.description.toLowerCase().includes(filterSearch.toLowerCase())) return false
     return true
   })

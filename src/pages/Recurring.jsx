@@ -22,6 +22,7 @@ const EMPTY_FORM = {
   payment_type: 'credit',
   shared: true,
   user_id: '',
+  paid_by: '',
 }
 
 export default function Recurring() {
@@ -60,9 +61,9 @@ export default function Recurring() {
     try { setFamilyMembers(await getFamilyMembers(familyId)) } catch {}
   }
 
-  function openAdd() { setForm({ ...EMPTY_FORM, user_id: user.id }); setEditingId(null); setShowModal(true) }
+  function openAdd() { setForm({ ...EMPTY_FORM, user_id: user.id, paid_by: user.id }); setEditingId(null); setShowModal(true) }
   function openEdit(r) {
-    setForm({ description: r.description, amount: String(r.amount), day_of_month: String(r.day_of_month), category_id: r.category_id || '', payment_type: r.payment_type || 'credit', shared: r.shared, user_id: r.user_id || user.id })
+    setForm({ description: r.description, amount: String(r.amount), day_of_month: String(r.day_of_month), category_id: r.category_id || '', payment_type: r.payment_type || 'credit', shared: r.shared, user_id: r.user_id || user.id, paid_by: r.paid_by || user.id })
     setEditingId(r.id)
     setShowModal(true)
   }
@@ -72,7 +73,7 @@ export default function Recurring() {
     e.preventDefault()
     setSaving(true)
     try {
-      const payload = { family_id: familyId, description: form.description.trim(), amount: parseFloat(form.amount), day_of_month: parseInt(form.day_of_month), category_id: form.category_id || null, payment_type: form.payment_type, shared: form.shared }
+      const payload = { family_id: familyId, description: form.description.trim(), amount: parseFloat(form.amount), day_of_month: parseInt(form.day_of_month), category_id: form.category_id || null, payment_type: form.payment_type, shared: form.shared, paid_by: form.shared && form.paid_by ? form.paid_by : null }
       if (editingId) {
         const updated = await updateRecurring(editingId, { ...payload, user_id: form.shared ? null : (form.user_id || user.id) })
         setRecurring(prev => prev.map(r => r.id === editingId ? updated : r))
@@ -201,7 +202,7 @@ export default function Recurring() {
                             <td data-label="Forma"><span className="badge badge-neutral">{PAYMENT_LABELS[r.payment_type] || r.payment_type}</span></td>
                             <td data-label="Tipo">
                               {r.shared
-                                ? <span className="badge badge-primary">Compartilhado</span>
+                                ? <span className="badge badge-primary">💑 {r.paid_by ? (familyMembers.find(m => m.user_id === r.paid_by)?.display_name || 'Membro') : 'Casal'}</span>
                                 : <span className="badge badge-neutral">Pessoal {r.user_id ? `• ${familyMembers.find(m => m.user_id === r.user_id)?.display_name || ''}` : ''}</span>
                               }
                             </td>
@@ -296,6 +297,16 @@ export default function Recurring() {
                     Despesa compartilhada (do casal)
                   </label>
                 </div>
+                {form.shared && (
+                  <div className="form-group">
+                    <label className="form-label">Quem paga</label>
+                    <select className="form-control" value={form.paid_by} onChange={e => setForm(f => ({ ...f, paid_by: e.target.value }))}>
+                      {familyMembers.map(m => (
+                        <option key={m.user_id} value={m.user_id}>{m.display_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {!form.shared && (
                   <div className="form-group">
                     <label className="form-label">De quem é</label>
