@@ -7,6 +7,7 @@ const NAV_MAIN = [
   { to: '/expenses',  icon: '💸', label: 'Lançamentos' },
   { to: '/budgets',   icon: '📈', label: 'Orçamentos' },
   { to: '/recurring', icon: '🔁', label: 'Recorrentes' },
+  { to: '/trips',     icon: '✈️', label: 'Viagens' },
   { to: '/categories',icon: '🏷️', label: 'Categorias' },
   { to: '/reports',   icon: '📄', label: 'Relatórios' },
 ]

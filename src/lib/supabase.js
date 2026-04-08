@@ -495,3 +495,134 @@ export async function joinFamily(familyId, userId, userEmail) {
     throw error
   }
 }
+
+// ============================================================
+// TRIPS (VIAGENS)
+// ============================================================
+
+export async function getTrips(familyId) {
+  const { data, error } = await supabase
+    .from('hh_trips')
+    .select('*')
+    .eq('family_id', familyId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function addTrip(trip) {
+  const { data, error } = await supabase
+    .from('hh_trips')
+    .insert(trip)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTrip(id, updates) {
+  const { data, error } = await supabase
+    .from('hh_trips')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTrip(id) {
+  const { error } = await supabase.from('hh_trips').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function getTripParticipants(tripId) {
+  const { data, error } = await supabase
+    .from('hh_trip_participants')
+    .select('*')
+    .eq('trip_id', tripId)
+  if (error) throw error
+  return data || []
+}
+
+export async function setTripParticipants(tripId, userIds) {
+  const { error: delError } = await supabase
+    .from('hh_trip_participants')
+    .delete()
+    .eq('trip_id', tripId)
+  if (delError) throw delError
+
+  if (userIds.length === 0) return []
+
+  const rows = userIds.map(uid => ({ trip_id: tripId, user_id: uid }))
+  const { data, error } = await supabase
+    .from('hh_trip_participants')
+    .insert(rows)
+    .select()
+  if (error) throw error
+  return data || []
+}
+
+export async function getTripExpenses(tripId) {
+  const { data, error } = await supabase
+    .from('hh_trip_expenses')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function addTripExpense(expense) {
+  const { data, error } = await supabase
+    .from('hh_trip_expenses')
+    .insert(expense)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTripExpense(id, updates) {
+  const { data, error } = await supabase
+    .from('hh_trip_expenses')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTripExpense(id) {
+  const { error } = await supabase.from('hh_trip_expenses').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function getTripExpenseSplits(expenseId) {
+  const { data, error } = await supabase
+    .from('hh_trip_expense_splits')
+    .select('*')
+    .eq('expense_id', expenseId)
+  if (error) throw error
+  return data || []
+}
+
+export async function setTripExpenseSplits(expenseId, splits) {
+  const { error: delError } = await supabase
+    .from('hh_trip_expense_splits')
+    .delete()
+    .eq('expense_id', expenseId)
+  if (delError) throw delError
+
+  if (splits.length === 0) return []
+
+  const rows = splits.map(s => ({ expense_id: expenseId, user_id: s.user_id, amount: s.amount }))
+  const { data, error } = await supabase
+    .from('hh_trip_expense_splits')
+    .insert(rows)
+    .select()
+  if (error) throw error
+  return data || []
+}

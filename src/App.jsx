@@ -12,6 +12,7 @@ import Recurring from './pages/Recurring'
 import Categories from './pages/Categories'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
+import Trips from './pages/Trips'
 import './styles/global.css'
 
 function App() {
@@ -68,6 +69,7 @@ function AppContent({ sidebarOpen, toggleSidebar, closeSidebar, sidebarCollapsed
           <Route path="/categories"  element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/reports"     element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="/trips"       element={<ProtectedRoute><Trips /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>
