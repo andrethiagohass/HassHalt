@@ -626,3 +626,30 @@ export async function setTripExpenseSplits(expenseId, splits) {
   if (error) throw error
   return data || []
 }
+
+// ---- Trip Settlements ----
+
+export async function getTripSettlements(tripId) {
+  const { data, error } = await supabase
+    .from('hh_trip_settlements')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('settled_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function addTripSettlement(settlement) {
+  const { data, error } = await supabase
+    .from('hh_trip_settlements')
+    .insert(settlement)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTripSettlement(id) {
+  const { error } = await supabase.from('hh_trip_settlements').delete().eq('id', id)
+  if (error) throw error
+}

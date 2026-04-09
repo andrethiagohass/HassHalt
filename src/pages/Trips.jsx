@@ -7,6 +7,7 @@ import {
   getTripExpenses, addTripExpense, updateTripExpense, deleteTripExpense,
   getFamilyMembers,
   getTripExpenseSplits, setTripExpenseSplits,
+  getTripSettlements, addTripSettlement, deleteTripSettlement,
 } from '../lib/supabase'
 import { formatCurrency, formatDate, getTodayISO } from '../lib/formatters'
 import Toast from '../components/Toast'
@@ -49,6 +50,11 @@ export default function Trips() {
   const [expForm, setExpForm]           = useState({ description: '', amount: '', date: getTodayISO(), category: 'Outros', paid_by: '', split_type: 'equal', notes: '', customSplits: {} })
   const [savingExp, setSavingExp]       = useState(false)
 
+  // Settlements
+  const [settlements, setSettlements]           = useState([])
+  const [showSettleModal, setShowSettleModal]   = useState(false)
+  const [settlingDebt, setSettlingDebt]         = useState(false)
+
   useEffect(() => {
     if (familyId) { loadTrips(); loadMembers() }
   }, [familyId])
@@ -68,12 +74,14 @@ export default function Trips() {
     setSelectedTrip(trip)
     setLoadingDetail(true)
     try {
-      const [parts, exps] = await Promise.all([
+      const [parts, exps, settles] = await Promise.all([
         getTripParticipants(trip.id),
         getTripExpenses(trip.id),
+        getTripSettlements(trip.id),
       ])
       setParticipants(parts)
       setTripExpenses(exps)
+      setSettlements(settles)
       const splitsMap = {}
       for (const e of exps) {
         if (e.split_type === 'custom') {
@@ -90,6 +98,7 @@ export default function Trips() {
     setTripExpenses([])
     setParticipants([])
     setAllSplits({})
+    setSettlements([])
   }
 
   // ---- Trip CRUD ----
@@ -250,6 +259,16 @@ export default function Trips() {
 
     for (const e of tripExpenses) {
       byCategory[e.category] = (byCategory[e.category] || 0) + Number(e.amount)
+
+      // Personal expenses: only the payer is responsible, no splitting
+      if (e.split_type === 'personal') {
+        if (e.paid_by) {
+          paidByUser[e.paid_by] = (paidByUser[e.paid_by] || 0) + Number(e.amount)
+          owedByUser[e.paid_by] = (owedByUser[e.paid_by] || 0) + Number(e.amount)
+        }
+        continue
+      }
+
       if (e.paid_by) paidByUser[e.paid_by] = (paidByUser[e.paid_by] || 0) + Number(e.amount)
 
       if (e.split_type === 'custom' && allSplits[e.id]) {
@@ -272,8 +291,15 @@ export default function Trips() {
       balances[uid] = (paidByUser[uid] || 0) - (owedByUser[uid] || 0)
     }
 
-    // Settlements: who owes whom
-    const settlements = []
+    // Apply existing settlements to balances
+    for (const s of settlements) {
+      // from_user paid to_user => from_user balance goes up, to_user balance goes down
+      balances[s.from_user] = (balances[s.from_user] || 0) + Number(s.amount)
+      balances[s.to_user] = (balances[s.to_user] || 0) - Number(s.amount)
+    }
+
+    // Settlements needed: who owes whom
+    const pendingSettlements = []
     const debtors = Object.entries(balances)
       .filter(([, b]) => b < -0.01)
       .map(([uid, b]) => ({ uid, amount: -b }))
@@ -287,7 +313,7 @@ export default function Trips() {
     while (di < debtors.length && ci < creditors.length) {
       const transfer = Math.min(debtors[di].amount, creditors[ci].amount)
       if (transfer > 0.01) {
-        settlements.push({ from: debtors[di].uid, to: creditors[ci].uid, amount: transfer })
+        pendingSettlements.push({ from: debtors[di].uid, to: creditors[ci].uid, amount: transfer })
       }
       debtors[di].amount -= transfer
       creditors[ci].amount -= transfer
@@ -295,7 +321,39 @@ export default function Trips() {
       if (creditors[ci].amount < 0.01) ci++
     }
 
-    return { total, byCategory, paidByUser, owedByUser, balances, settlements }
+    return { total, byCategory, paidByUser, owedByUser, balances, pendingSettlements }
+  }
+
+  // ---- Settle debts ----
+  async function handleSettleDebts() {
+    const summary = computeSummary()
+    if (summary.pendingSettlements.length === 0) return
+    setSettlingDebt(true)
+    try {
+      const newSettles = []
+      for (const s of summary.pendingSettlements) {
+        const result = await addTripSettlement({
+          trip_id: selectedTrip.id,
+          from_user: s.from,
+          to_user: s.to,
+          amount: s.amount,
+        })
+        newSettles.push(result)
+      }
+      setSettlements(prev => [...newSettles, ...prev])
+      setToast({ type: 'success', text: '✅ Dívidas quitadas com sucesso!' })
+      setShowSettleModal(false)
+    } catch { setToast({ type: 'error', text: 'Erro ao quitar dívidas.' }) }
+    finally { setSettlingDebt(false) }
+  }
+
+  async function handleDeleteSettlement(id) {
+    if (!window.confirm('Desfazer esta quitação?')) return
+    try {
+      await deleteTripSettlement(id)
+      setSettlements(prev => prev.filter(s => s.id !== id))
+      setToast({ type: 'success', text: 'Quitação desfeita.' })
+    } catch { setToast({ type: 'error', text: 'Erro ao desfazer.' }) }
   }
 
   function memberName(uid) {
@@ -332,6 +390,36 @@ export default function Trips() {
           <div className="loading-page"><div className="loading-spinner" /><span>Carregando...</span></div>
         ) : (
           <>
+            {/* Debt Summary Banner */}
+            {(() => {
+              const s = computeSummary()
+              if (s.pendingSettlements.length > 0) {
+                return (
+                  <div style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', border: '1px solid #f59e0b', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#92400e', marginBottom: '0.35rem' }}>💸 Resumo de Dívidas</div>
+                        {s.pendingSettlements.map((st, i) => (
+                          <div key={i} style={{ fontSize: '0.9rem', color: '#78350f', marginBottom: '0.15rem' }}>
+                            <strong>{memberName(st.from)}</strong> deve <strong style={{ color: '#dc2626' }}>{formatCurrency(st.amount)}</strong> para <strong>{memberName(st.to)}</strong>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => setShowSettleModal(true)}>✅ Quitar Dívidas</button>
+                    </div>
+                  </div>
+                )
+              }
+              if (tripExpenses.length > 0) {
+                return (
+                  <div style={{ background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)', border: '1px solid #10b981', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#065f46' }}>✅ Contas quitadas! Ninguém deve nada.</div>
+                  </div>
+                )
+              }
+              return null
+            })()}
+
             {/* Summary Cards */}
             <div className="grid-cols-2" style={{ marginBottom: '1.5rem', alignItems: 'flex-start' }}>
               <div className="stat-card">
@@ -371,7 +459,7 @@ export default function Trips() {
               </div>
               <div className="card card-body" style={{ padding: '1rem' }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>⚖️ Acerto de Contas</div>
-                {summary.settlements.length > 0 ? summary.settlements.map((s, i) => (
+                {summary.pendingSettlements.length > 0 ? summary.pendingSettlements.map((s, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
                     <span className="badge badge-neutral">{memberName(s.from)}</span>
                     <span>→</span>
@@ -382,6 +470,18 @@ export default function Trips() {
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {tripExpenses.length === 0 ? 'Nenhum gasto ainda.' : '✅ Tudo acertado!'}
                   </span>
+                )}
+                {settlements.length > 0 && (
+                  <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>📋 Quitações registradas</div>
+                    {settlements.map(s => (
+                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                        <span>{memberName(s.from_user)} → {memberName(s.to_user)}: <strong>{formatCurrency(s.amount)}</strong></span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(s.settled_at).toLocaleDateString('pt-BR')}</span>
+                        <button className="btn-icon" style={{ fontSize: '0.7rem', padding: '0.1rem 0.25rem', color: 'var(--error-color)' }} onClick={() => handleDeleteSettlement(s.id)} title="Desfazer">✕</button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -417,7 +517,10 @@ export default function Trips() {
                         </td>
                         <td data-label="Data" style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{formatDate(exp.date)}</td>
                         <td data-label="Categoria"><span>{CAT_ICON[exp.category] || '💰'} {exp.category}</span></td>
-                        <td data-label="Quem pagou"><span className="badge badge-primary">{memberName(exp.paid_by)}</span></td>
+                        <td data-label="Quem pagou">
+                          <span className="badge badge-primary">{memberName(exp.paid_by)}</span>
+                          {exp.split_type === 'personal' && <span className="badge badge-neutral" style={{ marginLeft: '0.25rem', fontSize: '0.65rem' }}>Pessoal</span>}
+                        </td>
                         <td className="td-amount" data-label="Valor" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color)' }}>{formatCurrency(exp.amount)}</td>
                         <td className="td-actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                           <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEditExp(exp)} title="Editar">✏️</button>
@@ -481,6 +584,7 @@ export default function Trips() {
                     <label className="form-label">Divisão</label>
                     <select className="form-control" value={expForm.split_type} onChange={e => setExpForm(f => ({ ...f, split_type: e.target.value }))}>
                       <option value="equal">Dividido igualmente</option>
+                      <option value="personal">Somente meu (não dividir)</option>
                       <option value="custom">Personalizado</option>
                     </select>
                   </div>
@@ -513,6 +617,41 @@ export default function Trips() {
             </div>
           </div>
         )}
+
+        {/* Settle Debts Modal */}
+        {showSettleModal && (() => {
+          const s = computeSummary()
+          return (
+            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowSettleModal(false)}>
+              <div className="modal">
+                <div className="modal-header">
+                  <h2 className="modal-title">✅ Quitar Dívidas</h2>
+                  <button className="modal-close" onClick={() => setShowSettleModal(false)}>✕</button>
+                </div>
+                <div className="modal-body">
+                  <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+                    Ao confirmar, as dívidas abaixo serão marcadas como quitadas e o saldo será zerado a partir deste momento.
+                  </p>
+                  {s.pendingSettlements.map((st, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', marginBottom: '0.5rem', padding: '0.5rem 0.75rem', background: 'var(--bg-hover)', borderRadius: '0.5rem' }}>
+                      <strong>{memberName(st.from)}</strong>
+                      <span>paga</span>
+                      <strong style={{ color: 'var(--primary-color)' }}>{formatCurrency(st.amount)}</strong>
+                      <span>para</span>
+                      <strong>{memberName(st.to)}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowSettleModal(false)}>Cancelar</button>
+                  <button type="button" className="btn btn-primary" disabled={settlingDebt} onClick={handleSettleDebts}>
+                    {settlingDebt ? 'Quitando...' : '✅ Confirmar Quitação'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Trip Edit Modal (reused) */}
         {showTripModal && renderTripModal()}
