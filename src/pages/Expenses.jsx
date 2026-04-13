@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import CurrencyInput from '../components/CurrencyInput'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  getExpenses, addExpense, updateExpense, deleteExpense, getCategories, getFamilyMembers
+  getExpenses, addExpense, updateExpense, deleteExpense, getCategories, getFamilyMembers,
+  addInstallmentExpenses, deleteExpensesByInstallmentId,
 } from '../lib/supabase'
 import {
   formatCurrency, formatDate, getMonthName, getCurrentMonthYear, getTodayISO
@@ -33,6 +34,9 @@ const EMPTY_FORM = {
   shared: false,
   paid_by: '',
   notes: '',
+  is_installment: false,
+  installment_count: '2',
+  installment_total_amount: '',
 }
 
 export default function Expenses() {
@@ -137,11 +141,14 @@ export default function Expenses() {
     e.preventDefault()
     setSaving(true)
     try {
+      const isInstallment = !editingId && form.is_installment
       const payload = {
         family_id:    familyId,
         user_id:      user.id,
         description:  form.description.trim(),
-        amount:       parseFloat(form.amount),
+        amount:       isInstallment
+          ? parseFloat(form.installment_total_amount) / (parseInt(form.installment_count, 10) || 2)
+          : parseFloat(form.amount),
         date:         form.date,
         category_id:  form.category_id || null,
         payment_type: form.payment_type,
@@ -154,6 +161,15 @@ export default function Expenses() {
         const updated = await updateExpense(editingId, payload)
         setExpenses(prev => prev.map(e => e.id === editingId ? updated : e))
         setToast({ type: 'success', text: 'Gasto atualizado com sucesso!' })
+      } else if (isInstallment) {
+        const count = parseInt(form.installment_count, 10) || 2
+        const created = await addInstallmentExpenses(payload, count, form.date)
+        const inMonth = created.filter(e => {
+          const d = new Date(e.date + 'T12:00:00')
+          return d.getMonth() + 1 === month && d.getFullYear() === year
+        })
+        if (inMonth.length > 0) setExpenses(prev => [...inMonth, ...prev])
+        setToast({ type: 'success', text: `Parcelamento criado! ${count}x de ${formatCurrency(payload.amount)}` })
       } else {
         const created = await addExpense(payload)
         setExpenses(prev => [created, ...prev])
@@ -175,6 +191,17 @@ export default function Expenses() {
       setToast({ type: 'success', text: 'Lançamento excluído.' })
     } catch {
       setToast({ type: 'error', text: 'Erro ao excluir.' })
+    }
+  }
+
+  async function handleDeleteInstallment(installmentId) {
+    if (!window.confirm('Excluir TODAS as parcelas deste parcelamento?')) return
+    try {
+      await deleteExpensesByInstallmentId(installmentId)
+      setExpenses(prev => prev.filter(e => e.installment_id !== installmentId))
+      setToast({ type: 'success', text: 'Parcelamento excluído.' })
+    } catch {
+      setToast({ type: 'error', text: 'Erro ao excluir parcelamento.' })
     }
   }
 
@@ -307,6 +334,9 @@ export default function Expenses() {
                         <tr key={expense.id}>
                           <td className="td-desc" style={{ maxWidth: '220px' }}>
                             <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expense.description}</div>
+                            {expense.installment_id && (
+                              <span className="badge badge-warning" style={{ fontSize: '0.65rem', marginTop: '0.15rem' }}>📦 Parcela {expense.installment_current}/{expense.installment_total}</span>
+                            )}
                             {expense.notes && <div style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expense.notes}</div>}
                           </td>
                           <td data-label="Data" style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
@@ -341,7 +371,10 @@ export default function Expenses() {
                             {canEdit ? (
                               <>
                                 <button className="btn-icon" style={{ marginRight: '0.25rem' }} onClick={() => openEdit(expense)} title="Editar">✏️</button>
-                                <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)' }} onClick={() => handleDelete(expense.id)} title="Excluir">🗑️</button>
+                                <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)', marginRight: '0.25rem' }} onClick={() => handleDelete(expense.id)} title="Excluir">🗑️</button>
+                                {expense.installment_id && (
+                                  <button className="btn-icon" style={{ color: 'var(--error-color)', borderColor: 'var(--error-light)', fontSize: '0.65rem' }} onClick={() => handleDeleteInstallment(expense.installment_id)} title="Excluir todas as parcelas">🗑️All</button>
+                                )}
                               </>
                             ) : (
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} title="Despesa pessoal de outro membro">🔒</span>
@@ -389,17 +422,19 @@ export default function Expenses() {
                 </div>
 
                 <div className="form-row">
+                  {!(form.is_installment && !editingId) && (
+                    <div className="form-group">
+                      <label className="form-label">Valor (R$) *</label>
+                      <CurrencyInput
+                        className="form-control"
+                        value={form.amount}
+                        onChange={v => setForm(f => ({ ...f, amount: v }))}
+                        required
+                      />
+                    </div>
+                  )}
                   <div className="form-group">
-                    <label className="form-label">Valor (R$) *</label>
-                    <CurrencyInput
-                      className="form-control"
-                      value={form.amount}
-                      onChange={v => setForm(f => ({ ...f, amount: v }))}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Data *</label>
+                    <label className="form-label">{form.is_installment && !editingId ? 'Data da 1ª parcela *' : 'Data *'}</label>
                     <input
                       className="form-control"
                       type="date"
@@ -450,6 +485,57 @@ export default function Expenses() {
                     Gasto compartilhado (do casal)
                   </label>
                 </div>
+
+                {!editingId && (
+                  <div className="form-group">
+                    <label className="form-check">
+                      <input
+                        type="checkbox"
+                        checked={form.is_installment}
+                        onChange={e => setForm(f => ({ ...f, is_installment: e.target.checked }))}
+                      />
+                      Compra parcelada
+                    </label>
+                  </div>
+                )}
+
+                {!editingId && form.is_installment && (
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Valor total da compra (R$) *</label>
+                      <CurrencyInput
+                        className="form-control"
+                        value={form.installment_total_amount}
+                        onChange={v => setForm(f => ({ ...f, installment_total_amount: v }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nº de parcelas *</label>
+                      <input
+                        className="form-control"
+                        type="number"
+                        min="2"
+                        max="48"
+                        value={form.installment_count}
+                        onChange={e => setForm(f => ({ ...f, installment_count: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {!editingId && form.is_installment && form.installment_total_amount && form.installment_count && (
+                  <div style={{ background: 'var(--bg-hover)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                    💳 <strong>{parseInt(form.installment_count, 10) || 2}x</strong> de{' '}
+                    <strong style={{ color: 'var(--primary-color)' }}>
+                      {formatCurrency(parseFloat(form.installment_total_amount) / (parseInt(form.installment_count, 10) || 2))}
+                    </strong>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                      1ª parcela em {formatDate(form.date)}
+                    </span>
+                  </div>
+                )}
 
                 {form.shared && (
                   <div className="form-group">

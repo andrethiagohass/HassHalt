@@ -118,6 +118,38 @@ export async function deleteExpense(id) {
   if (error) throw error
 }
 
+export async function addInstallmentExpenses(baseExpense, totalInstallments, firstDate) {
+  const installmentId = crypto.randomUUID()
+  const rows = []
+  for (let i = 0; i < totalInstallments; i++) {
+    const d = new Date(firstDate + 'T12:00:00')
+    d.setMonth(d.getMonth() + i)
+    const dateStr = d.toISOString().slice(0, 10)
+    rows.push({
+      ...baseExpense,
+      description: `${baseExpense.description} (${i + 1}/${totalInstallments})`,
+      date: dateStr,
+      installment_id: installmentId,
+      installment_current: i + 1,
+      installment_total: totalInstallments,
+    })
+  }
+  const { data, error } = await supabase
+    .from('hh_expenses')
+    .insert(rows)
+    .select('*, hh_categories(id, name, icon, color)')
+  if (error) throw error
+  return data || []
+}
+
+export async function deleteExpensesByInstallmentId(installmentId) {
+  const { error } = await supabase
+    .from('hh_expenses')
+    .delete()
+    .eq('installment_id', installmentId)
+  if (error) throw error
+}
+
 export async function getDashboardSummary(familyId, month, year) {
   const expenses = await getExpenses(familyId, month, year)
 
